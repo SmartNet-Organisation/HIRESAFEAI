@@ -14,8 +14,10 @@ import { ScamReportHistoryPage } from '../pages/ScamReportHistoryPage';
 import { EmergencySafetyPage } from '../pages/EmergencySafetyPage';
 import { UserProfilePage } from '../pages/UserProfilePage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { PricingPage } from '../pages/PricingPage';
+import { BillingPage } from '../pages/BillingPage';
 
-type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety' | 'profile' | 'settings';
+type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety' | 'profile' | 'settings' | 'pricing' | 'billing';
 
 export const Router: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -116,6 +118,18 @@ export const Router: React.FC = () => {
       case 'settings':
         return (
           <SettingsPage
+            onNavigate={navigate}
+          />
+        );
+      case 'pricing':
+        return (
+          <PricingPage
+            onNavigate={navigate}
+          />
+        );
+      case 'billing':
+        return (
+          <BillingPage
             onNavigate={navigate}
           />
         );
