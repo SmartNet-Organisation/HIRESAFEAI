@@ -7,6 +7,9 @@ import { OTPVerificationPage } from '../pages/OTPVerificationPage';
 import { VerificationStatusPage } from '../pages/VerificationStatusPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { CareerCenterDashboard } from '../pages/CareerCenterDashboard';
+import { RecruiterDashboard } from '../pages/RecruiterDashboard';
+import { InstitutionDashboard } from '../pages/InstitutionDashboard';
 import { JobAnalysisPage } from '../pages/JobAnalysisPage';
 import { JobDetailsPage } from '../pages/JobDetailsPage';
 import { CompanyInsightsPage } from '../pages/CompanyInsightsPage';
@@ -17,7 +20,7 @@ import { SettingsPage } from '../pages/SettingsPage';
 import { PricingPage } from '../pages/PricingPage';
 import { BillingPage } from '../pages/BillingPage';
 
-type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety' | 'profile' | 'settings' | 'pricing' | 'billing';
+type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'career-center-dashboard' | 'recruiter-dashboard' | 'institution-dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety' | 'profile' | 'settings' | 'pricing' | 'billing';
 
 export const Router: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -26,6 +29,7 @@ export const Router: React.FC = () => {
     success?: boolean;
     message?: string;
     userName?: string;
+    userType?: string;
     jobData?: any;
     companyData?: any;
   }>({});
@@ -38,7 +42,22 @@ export const Router: React.FC = () => {
   };
 
   const handleOnboardingComplete = () => {
-    navigate('dashboard');
+    // Navigate to appropriate dashboard based on user type
+    const userType = verificationData.userType || 'job-seeker';
+    switch (userType) {
+      case 'career-center':
+        navigate('career-center-dashboard');
+        break;
+      case 'recruiter':
+        navigate('recruiter-dashboard');
+        break;
+      case 'institution':
+        navigate('institution-dashboard');
+        break;
+      default:
+        navigate('dashboard');
+        break;
+    }
   };
 
   const renderPage = () => {
@@ -66,6 +85,7 @@ export const Router: React.FC = () => {
           <OnboardingPage
             onComplete={handleOnboardingComplete}
             userName={verificationData.userName || 'User'}
+            userType={verificationData.userType || 'job-seeker'}
           />
         );
       case 'dashboard':
@@ -73,6 +93,27 @@ export const Router: React.FC = () => {
           <DashboardPage
             onNavigate={navigate}
             userName={verificationData.userName || 'User'}
+          />
+        );
+      case 'career-center-dashboard':
+        return (
+          <CareerCenterDashboard
+            onNavigate={navigate}
+            userName={verificationData.userName || 'Career Center'}
+          />
+        );
+      case 'recruiter-dashboard':
+        return (
+          <RecruiterDashboard
+            onNavigate={navigate}
+            userName={verificationData.userName || 'Recruiter'}
+          />
+        );
+      case 'institution-dashboard':
+        return (
+          <InstitutionDashboard
+            onNavigate={navigate}
+            userName={verificationData.userName || 'Institution'}
           />
         );
       case 'job-analysis':
