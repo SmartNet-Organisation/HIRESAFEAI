@@ -6,8 +6,8 @@ export const HowItWorks: React.FC = () => {
     <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 bg-black relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2">
-          {/* Animated Circles */}
+        <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2 hidden lg:block">
+          {/* Animated Circles - Only visible on large screens */}
           <div className="relative">
             <div className="w-96 h-96 border border-purple-500/20 rounded-full animate-spin-slow"></div>
             <div className="absolute top-8 left-8 w-80 h-80 border border-blue-500/20 rounded-full animate-spin-reverse"></div>
@@ -42,9 +42,33 @@ export const HowItWorks: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-24">
+          {/* Mobile Animation - Shows on top for mobile */}
+          <div className="lg:hidden flex justify-center mb-8">
+            <div className="relative">
+              <div className="w-64 h-64 border border-purple-500/20 rounded-full animate-spin-slow"></div>
+              <div className="absolute top-4 left-4 w-56 h-56 border border-blue-500/20 rounded-full animate-spin-reverse"></div>
+              <div className="absolute top-8 left-8 w-48 h-48 border border-pink-500/20 rounded-full animate-spin-slow"></div>
+              
+              {/* Center Icon */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-4 rounded-full">
+                  <Brain className="h-8 w-8 text-white" />
+                </div>
+              </div>
+
+              {/* Floating Icons */}
+              <div className="absolute top-2 right-2 bg-gradient-to-r from-pink-500 to-rose-500 p-2 rounded-full animate-float">
+                <Shield className="h-4 w-4 text-white" />
+              </div>
+              <div className="absolute bottom-2 left-2 bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-full animate-float-delay">
+                <Zap className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          </div>
+
           {/* Left Side - Content */}
-          <div className="flex-1 max-w-2xl">
+          <div className="flex-1 max-w-2xl lg:pr-8">
             <p className="text-purple-400 text-sm font-semibold mb-6 tracking-wide uppercase">
               OUR APPROACH
             </p>
@@ -59,7 +83,7 @@ export const HowItWorks: React.FC = () => {
             </p>
 
             {/* Features List with Better Spacing */}
-            <div className="space-y-16">
+            <div className="space-y-12">
               <div className="flex items-start space-x-6">
                 <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl flex-shrink-0">
                   <Brain className="h-7 w-7 text-white" />
@@ -101,8 +125,8 @@ export const HowItWorks: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Side - Animation Space */}
-          <div className="flex-1 flex justify-center lg:justify-end">
+          {/* Right Side - Animation Space (Desktop Only) */}
+          <div className="hidden lg:flex flex-1 justify-end">
             <div className="w-96 h-96 relative">
               {/* This space is reserved for the animated circles positioned absolutely */}
             </div>
