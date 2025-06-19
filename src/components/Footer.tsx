@@ -43,7 +43,7 @@ export const Footer: React.FC = () => {
               <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
                 <Zap className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">HIRESAFE</span>
+              <span className="text-xl font-bold text-white">HIRESAFE AI</span>
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
               Protecting job seekers from scams with advanced AI and blockchain technology.
