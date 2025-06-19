@@ -12,8 +12,10 @@ import { JobDetailsPage } from '../pages/JobDetailsPage';
 import { CompanyInsightsPage } from '../pages/CompanyInsightsPage';
 import { ScamReportHistoryPage } from '../pages/ScamReportHistoryPage';
 import { EmergencySafetyPage } from '../pages/EmergencySafetyPage';
+import { UserProfilePage } from '../pages/UserProfilePage';
+import { SettingsPage } from '../pages/SettingsPage';
 
-type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety';
+type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard' | 'job-analysis' | 'job-details' | 'company-insights' | 'scam-reports' | 'emergency-safety' | 'profile' | 'settings';
 
 export const Router: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -101,6 +103,19 @@ export const Router: React.FC = () => {
       case 'emergency-safety':
         return (
           <EmergencySafetyPage
+            onNavigate={navigate}
+          />
+        );
+      case 'profile':
+        return (
+          <UserProfilePage
+            onNavigate={navigate}
+            userName={verificationData.userName || 'User'}
+          />
+        );
+      case 'settings':
+        return (
+          <SettingsPage
             onNavigate={navigate}
           />
         );
