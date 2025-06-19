@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Shield, TrendingUp, AlertTriangle, Users, CheckCircle, Search, FileText, Building, Phone } from 'lucide-react';
+import { Zap, Shield, TrendingUp, AlertTriangle, Users, CheckCircle, Search, FileText, Building, Phone, User, Settings } from 'lucide-react';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -98,6 +98,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, userNa
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-300">Welcome back, {userName}!</span>
+              <button
+                onClick={() => onNavigate('profile')}
+                className="bg-gray-700 text-white p-2 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <User className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => onNavigate('settings')}
+                className="bg-gray-700 text-white p-2 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
               <button
                 onClick={() => onNavigate('landing')}
                 className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
