@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
               <Zap className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">HIRESAFE</span>
+            <span className="text-xl font-bold text-white">HIRESAFEAI</span>
           </div>
 
           {/* Desktop Navigation */}
