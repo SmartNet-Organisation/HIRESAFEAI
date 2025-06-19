@@ -26,11 +26,6 @@ export const Router: React.FC = () => {
     }
   };
 
-  const handleLoginSuccess = (userData: any) => {
-    setVerificationData({ userName: userData.name || 'User' });
-    navigate('onboarding');
-  };
-
   const handleOnboardingComplete = () => {
     navigate('dashboard');
   };
@@ -40,25 +35,13 @@ export const Router: React.FC = () => {
       case 'landing':
         return <LandingPage onNavigate={navigate} />;
       case 'login':
-        return <LoginPage onNavigate={(page, data) => {
-          if (page === 'verification-status' && data?.success) {
-            handleLoginSuccess(data);
-          } else {
-            navigate(page, data);
-          }
-        }} />;
+        return <LoginPage onNavigate={navigate} />;
       case 'signup':
         return <SignUpPage onNavigate={navigate} />;
       case 'forgot-password':
         return <ForgotPasswordPage onNavigate={navigate} />;
       case 'otp-verification':
-        return <OTPVerificationPage onNavigate={(page, data) => {
-          if (page === 'verification-status' && data?.success) {
-            handleLoginSuccess(data);
-          } else {
-            navigate(page, data);
-          }
-        }} email={verificationData.email} />;
+        return <OTPVerificationPage onNavigate={navigate} email={verificationData.email} />;
       case 'verification-status':
         return (
           <VerificationStatusPage

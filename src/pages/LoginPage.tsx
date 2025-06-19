@@ -36,8 +36,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
     try {
       await login(email, password);
-      onNavigate('verification-status', {
+      // Navigate to onboarding after successful login
+      onNavigate('onboarding', {
         success: true,
+        userName: 'Demo User',
         message: 'Login successful! Welcome back to HireSafe AI.'
       });
     } catch (error) {
@@ -70,7 +72,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl">
               <Zap className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">HIRESAFE</span>
+            <span className="text-2xl font-bold text-white">HIRESAFE AI</span>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
           <p className="text-gray-400">Sign in to your protected account</p>

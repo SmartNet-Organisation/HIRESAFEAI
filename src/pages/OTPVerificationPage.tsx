@@ -59,8 +59,10 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({ onNavi
 
     try {
       await verifyOTP(otpString);
-      onNavigate('verification-status', {
+      // Navigate to onboarding after successful verification
+      onNavigate('onboarding', {
         success: true,
+        userName: 'Demo User',
         message: 'Email verified successfully! Your account is now active.'
       });
     } catch (error) {
@@ -105,7 +107,7 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({ onNavi
             <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl">
               <Zap className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">HIRESAFE</span>
+            <span className="text-2xl font-bold text-white">HIRESAFE AI</span>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Verify Your Email</h2>
           <p className="text-gray-400">
