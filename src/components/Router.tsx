@@ -5,8 +5,10 @@ import { SignUpPage } from '../pages/SignUpPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { OTPVerificationPage } from '../pages/OTPVerificationPage';
 import { VerificationStatusPage } from '../pages/VerificationStatusPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { DashboardPage } from '../pages/DashboardPage';
 
-type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status';
+type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'otp-verification' | 'verification-status' | 'onboarding' | 'dashboard';
 
 export const Router: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -14,13 +16,23 @@ export const Router: React.FC = () => {
     email?: string;
     success?: boolean;
     message?: string;
+    userName?: string;
   }>({});
 
   const navigate = (page: Page, data?: any) => {
     setCurrentPage(page);
     if (data) {
-      setVerificationData(data);
+      setVerificationData(prev => ({ ...prev, ...data }));
     }
+  };
+
+  const handleLoginSuccess = (userData: any) => {
+    setVerificationData({ userName: userData.name || 'User' });
+    navigate('onboarding');
+  };
+
+  const handleOnboardingComplete = () => {
+    navigate('dashboard');
   };
 
   const renderPage = () => {
@@ -28,19 +40,45 @@ export const Router: React.FC = () => {
       case 'landing':
         return <LandingPage onNavigate={navigate} />;
       case 'login':
-        return <LoginPage onNavigate={navigate} />;
+        return <LoginPage onNavigate={(page, data) => {
+          if (page === 'verification-status' && data?.success) {
+            handleLoginSuccess(data);
+          } else {
+            navigate(page, data);
+          }
+        }} />;
       case 'signup':
         return <SignUpPage onNavigate={navigate} />;
       case 'forgot-password':
         return <ForgotPasswordPage onNavigate={navigate} />;
       case 'otp-verification':
-        return <OTPVerificationPage onNavigate={navigate} email={verificationData.email} />;
+        return <OTPVerificationPage onNavigate={(page, data) => {
+          if (page === 'verification-status' && data?.success) {
+            handleLoginSuccess(data);
+          } else {
+            navigate(page, data);
+          }
+        }} email={verificationData.email} />;
       case 'verification-status':
         return (
           <VerificationStatusPage
             onNavigate={navigate}
             success={verificationData.success}
             message={verificationData.message}
+          />
+        );
+      case 'onboarding':
+        return (
+          <OnboardingPage
+            onComplete={handleOnboardingComplete}
+            userName={verificationData.userName || 'User'}
+          />
+        );
+      case 'dashboard':
+        return (
+          <DashboardPage
+            onNavigate={navigate}
+            userName={verificationData.userName || 'User'}
           />
         );
       default:
