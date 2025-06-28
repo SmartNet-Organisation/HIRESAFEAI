@@ -1,13 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Router } from './components/Router';
-import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
-  return (
-    <AuthProvider>
-      <Router />
-    </AuthProvider>
-  );
+  return <Router />;
 }
 
 export default App;
