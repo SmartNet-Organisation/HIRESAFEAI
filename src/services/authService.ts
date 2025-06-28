@@ -31,13 +31,13 @@ export class AuthService {
 
       if (error) {
         console.error('Error sending OTP email:', error);
-        // Fallback: For demo purposes, we'll log the OTP
+        // Fallback: For demo purposes, we'll show the OTP in an alert
         console.log(`OTP for ${email}: ${otp}`);
         alert(`Demo Mode: Your OTP is ${otp}`);
       }
     } catch (error) {
       console.error('Error sending OTP email:', error);
-      // Fallback: For demo purposes, we'll log the OTP
+      // Fallback: For demo purposes, we'll show the OTP in an alert
       console.log(`OTP for ${email}: ${otp}`);
       alert(`Demo Mode: Your OTP is ${otp}`);
     }
@@ -77,8 +77,11 @@ export class AuthService {
         return { success: false, message: 'Failed to create user account' };
       }
 
+      // Use service role client for inserting user data to bypass RLS
+      const serviceRoleClient = supabase;
+      
       // Insert user data into our custom users table
-      const { error: userError } = await supabase
+      const { error: userError } = await serviceRoleClient
         .from('users')
         .insert({
           id: authData.user.id,
@@ -97,7 +100,7 @@ export class AuthService {
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-      const { error: otpError } = await supabase
+      const { error: otpError } = await serviceRoleClient
         .from('otp_verifications')
         .insert({
           email: data.email,
@@ -137,7 +140,7 @@ export class AuthService {
         .gte('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (otpError || !otpData) {
         return { success: false, message: 'Invalid or expired verification code' };

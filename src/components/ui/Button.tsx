@@ -1,9 +1,10 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   icon?: LucideIcon;
@@ -14,6 +15,7 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
+  type = 'button',
   variant = 'primary',
   size = 'md',
   icon: Icon,
@@ -37,6 +39,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
