@@ -40,7 +40,7 @@ export class AuthService {
     try {
       console.log('🚀 Starting signup process for:', data.email);
 
-      // Check if user already exists
+      // Check if user already exists in our users table
       const { data: existingUser } = await supabase
         .from('users')
         .select('email, is_verified')
@@ -59,11 +59,12 @@ export class AuthService {
         }
       }
 
-      // Create user account with Supabase Auth
+      // Create user account with Supabase Auth (email confirmation disabled)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
+          emailRedirectTo: undefined, // Disable email confirmation
           data: {
             name: data.name,
             user_type: data.userType
@@ -82,9 +83,21 @@ export class AuthService {
 
       console.log('✅ Auth user created:', authData.user.id);
 
-      // The database trigger will automatically create the user record
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Manually insert user data since the trigger might not work in all environments
+      const { error: userInsertError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: data.email,
+          name: data.name,
+          user_type: data.userType,
+          is_verified: false
+        });
+
+      if (userInsertError) {
+        console.error('❌ Error inserting user data:', userInsertError);
+        // Continue anyway, the trigger might have handled it
+      }
 
       // Generate and store OTP
       const otp = this.generateOTP();
@@ -143,19 +156,6 @@ export class AuthService {
       console.log('🔐 OTP provided:', otp);
       console.log('⏰ Current time:', new Date().toISOString());
 
-      // First, let's check all OTPs for this email to debug
-      const { data: allOtps, error: debugError } = await supabase
-        .from('otp_verifications')
-        .select('*')
-        .eq('email', email)
-        .order('created_at', { ascending: false });
-
-      if (debugError) {
-        console.error('❌ Debug query error:', debugError);
-      } else {
-        console.log('🔍 All OTPs for email:', allOtps);
-      }
-
       // Get the latest valid OTP for this email
       const { data: otpData, error: otpError } = await supabase
         .from('otp_verifications')
@@ -173,10 +173,8 @@ export class AuthService {
         return { success: false, message: 'Failed to verify code' };
       }
 
-      console.log('🔍 Found OTP data:', otpData);
-
       if (!otpData) {
-        // Let's check if there's an OTP that matches but might be expired or used
+        // Check if there's an OTP that matches but might be expired or used
         const { data: expiredOtp } = await supabase
           .from('otp_verifications')
           .select('*')
@@ -188,15 +186,12 @@ export class AuthService {
 
         if (expiredOtp) {
           if (expiredOtp.is_used) {
-            console.log('❌ OTP already used');
             return { success: false, message: 'This verification code has already been used' };
           } else if (new Date(expiredOtp.expires_at) < new Date()) {
-            console.log('❌ OTP expired');
             return { success: false, message: 'Verification code has expired. Please request a new one' };
           }
         }
 
-        console.log('❌ Invalid OTP - no matching record found');
         return { success: false, message: 'Invalid verification code. Please check and try again' };
       }
 
@@ -247,6 +242,28 @@ export class AuthService {
     try {
       console.log('🔑 Signing in user:', data.email);
 
+      // First check if user exists in our users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', data.email)
+        .single();
+
+      if (userError || !userData) {
+        console.error('❌ User not found in users table:', userError);
+        return { success: false, message: 'Invalid email or password' };
+      }
+
+      if (!userData.is_verified) {
+        console.log('⚠️ User not verified');
+        return { 
+          success: false, 
+          message: 'Please verify your email before signing in. Check your email for the verification code.',
+          requiresVerification: true
+        };
+      }
+
+      // Now attempt to sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
@@ -254,6 +271,18 @@ export class AuthService {
 
       if (authError) {
         console.error('❌ Auth signin error:', authError);
+        
+        // Handle specific auth errors
+        if (authError.message.includes('Invalid login credentials')) {
+          return { success: false, message: 'Invalid email or password' };
+        } else if (authError.message.includes('Email not confirmed')) {
+          return { 
+            success: false, 
+            message: 'Please verify your email before signing in',
+            requiresVerification: true
+          };
+        }
+        
         return { success: false, message: authError.message };
       }
 
@@ -262,28 +291,6 @@ export class AuthService {
       }
 
       console.log('✅ Auth signin successful');
-
-      // Get user data from our custom table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (userError || !userData) {
-        console.error('❌ User data not found:', userError);
-        return { success: false, message: 'User profile not found' };
-      }
-
-      if (!userData.is_verified) {
-        console.log('⚠️ User not verified');
-        return { 
-          success: false, 
-          message: 'Please verify your email before signing in',
-          requiresVerification: true
-        };
-      }
-
       console.log('✅ Signin completed successfully');
 
       return { 

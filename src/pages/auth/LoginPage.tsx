@@ -59,10 +59,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         if (result.requiresVerification) {
           // User needs to verify email
           setErrors({ 
-            general: `${result.message} Would you like to verify your email now?` 
+            general: result.message
           });
           
-          // Optionally navigate to OTP verification
+          // Show option to go to verification
           setTimeout(() => {
             const shouldVerify = window.confirm('Would you like to verify your email now?');
             if (shouldVerify) {
