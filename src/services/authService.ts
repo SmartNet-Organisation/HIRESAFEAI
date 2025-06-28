@@ -46,18 +46,8 @@ export class AuthService {
   // Sign up user and send OTP
   async signUp(data: SignUpData): Promise<{ success: boolean; message: string }> {
     try {
-      // Check if user already exists - use maybeSingle() instead of single()
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', data.email)
-        .maybeSingle();
-
-      if (existingUser) {
-        return { success: false, message: 'User with this email already exists' };
-      }
-
       // Create user account with Supabase Auth
+      // The database trigger will automatically handle inserting into the users table
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -77,30 +67,11 @@ export class AuthService {
         return { success: false, message: 'Failed to create user account' };
       }
 
-      // Use service role client for inserting user data to bypass RLS
-      const serviceRoleClient = supabase;
-      
-      // Insert user data into our custom users table
-      const { error: userError } = await serviceRoleClient
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: data.email,
-          name: data.name,
-          user_type: data.userType,
-          is_verified: false
-        });
-
-      if (userError) {
-        console.error('Error inserting user data:', userError);
-        return { success: false, message: 'Failed to save user data' };
-      }
-
       // Generate and store OTP
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-      const { error: otpError } = await serviceRoleClient
+      const { error: otpError } = await supabase
         .from('otp_verifications')
         .insert({
           email: data.email,
