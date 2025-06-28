@@ -247,7 +247,7 @@ export class AuthService {
         .from('users')
         .select('*')
         .eq('email', data.email)
-        .single();
+        .maybeSingle();
 
       if (userError || !userData) {
         console.error('❌ User not found in users table:', userError);
