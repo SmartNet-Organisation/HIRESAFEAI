@@ -12,13 +12,17 @@ export const Router: React.FC = () => {
   const [userData, setUserData] = useState<any>({});
 
   const navigate = (page: Page, data?: any) => {
+    console.log(`🧭 Navigating to: ${page}`, data);
     setCurrentPage(page);
     if (data) {
       setUserData(prev => ({ ...prev, ...data }));
+      console.log('📝 Updated user data:', { ...userData, ...data });
     }
   };
 
   const renderPage = () => {
+    console.log(`🎯 Rendering page: ${currentPage}`);
+    
     switch (currentPage) {
       case 'landing':
         return <LandingPage onNavigate={navigate} />;
@@ -27,6 +31,7 @@ export const Router: React.FC = () => {
       case 'signup':
         return <SignUpPage onNavigate={navigate} />;
       case 'otp-verification':
+        console.log('📧 Rendering OTP verification with data:', userData);
         return (
           <OTPVerificationPage 
             onNavigate={navigate} 

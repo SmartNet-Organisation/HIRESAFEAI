@@ -17,10 +17,17 @@ export class EmailService {
       console.log(`👤 User: ${name}`);
       
       // Simulate email sending delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Show OTP in alert for demo purposes
-      alert(`Demo Mode: Your verification code is ${otp}\n\nIn production, this would be sent to your email: ${email}`);
+      // Show OTP in alert for demo purposes with better formatting
+      const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
+                          `Hello ${name}!\n\n` +
+                          `Your verification code is: ${otp}\n\n` +
+                          `This code will expire in 10 minutes.\n\n` +
+                          `📧 Email: ${email}\n\n` +
+                          `Note: In production, this code would be sent to your email inbox.`;
+      
+      alert(alertMessage);
       
       return {
         success: true,
@@ -42,6 +49,9 @@ export class EmailService {
       
       // In production, send actual welcome email
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Show welcome message
+      console.log(`✅ Welcome email sent to ${name} at ${email}`);
     } catch (error) {
       console.error('Welcome email error:', error);
     }
