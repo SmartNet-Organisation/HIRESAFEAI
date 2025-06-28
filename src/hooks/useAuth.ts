@@ -16,12 +16,16 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
+    console.log('🔍 Initializing auth state...');
+    
     // Check initial auth state
     checkAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.id);
+        
         if (event === 'SIGNED_IN' && session?.user) {
           const userData = await authService.getCurrentUser();
           setAuthState({
@@ -39,19 +43,26 @@ export const useAuth = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAuth = async () => {
     try {
+      console.log('🔍 Checking current auth state...');
       const userData = await authService.getCurrentUser();
+      
       setAuthState({
         user: userData,
         isLoading: false,
         isAuthenticated: !!userData
       });
+      
+      console.log('✅ Auth check completed:', !!userData);
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('❌ Auth check error:', error);
       setAuthState({
         user: null,
         isLoading: false,
@@ -61,6 +72,7 @@ export const useAuth = () => {
   };
 
   const login = async (email: string, password: string) => {
+    console.log('🔑 Login attempt via useAuth hook');
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
@@ -78,6 +90,7 @@ export const useAuth = () => {
         return result;
       }
     } catch (error) {
+      console.error('❌ Login error in useAuth:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
       throw error;
     }
@@ -85,14 +98,16 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
+      console.log('👋 Logout attempt via useAuth hook');
       await authService.signOut();
       setAuthState({
         user: null,
         isLoading: false,
         isAuthenticated: false
       });
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
     }
   };
 

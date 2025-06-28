@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, ArrowLeft, Users, Building, GraduationCap, Briefcase } from 'lucide-react';
+import { Zap, ArrowLeft, Users, Building, GraduationCap, Briefcase, Loader2 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { authService } from '../../services/authService';
@@ -29,14 +29,40 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Full name is required';
-    if (!formData.email) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-    if (!formData.password) newErrors.password = 'Password is required';
-    else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
-    else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-    if (!formData.userType) newErrors.userType = 'Please select a user type';
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    // User type validation
+    if (!formData.userType) {
+      newErrors.userType = 'Please select a user type';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -44,28 +70,36 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     setErrors({});
 
     try {
+      console.log('🚀 Submitting signup form...');
+      
       const result = await authService.signUp({
-        name: formData.name,
-        email: formData.email,
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase().trim(),
         password: formData.password,
         userType: formData.userType
       });
 
       if (result.success) {
+        console.log('✅ Signup successful, navigating to OTP verification');
         onNavigate('otp-verification', { 
-          email: formData.email, 
-          userName: formData.name 
+          email: formData.email.toLowerCase().trim(), 
+          userName: formData.name.trim()
         });
       } else {
+        console.error('❌ Signup failed:', result.message);
         setErrors({ general: result.message });
       }
     } catch (error) {
+      console.error('❌ Unexpected signup error:', error);
       setErrors({ general: 'An unexpected error occurred. Please try again.' });
     } finally {
       setIsLoading(false);
@@ -74,8 +108,15 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
+    
+    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
+    }
+    
+    // Clear general error when user makes changes
+    if (errors.general) {
+      setErrors({ ...errors, general: '' });
     }
   };
 
@@ -87,6 +128,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
         <button
           onClick={() => onNavigate('landing')}
           className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors"
+          disabled={isLoading}
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back to Home
@@ -118,6 +160,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               error={errors.name}
+              disabled={isLoading}
             />
 
             <Input
@@ -127,6 +170,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               error={errors.email}
+              disabled={isLoading}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -137,6 +181,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 error={errors.password}
+                disabled={isLoading}
               />
 
               <Input
@@ -146,6 +191,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                 error={errors.confirmPassword}
+                disabled={isLoading}
               />
             </div>
 
@@ -157,7 +203,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
                     key={type.id}
                     type="button"
                     onClick={() => handleInputChange('userType', type.id)}
-                    className={`p-4 rounded-xl border transition-all duration-300 text-left ${
+                    disabled={isLoading}
+                    className={`p-4 rounded-xl border transition-all duration-300 text-left disabled:opacity-50 disabled:cursor-not-allowed ${
                       formData.userType === type.id
                         ? 'border-purple-500 bg-purple-500/20'
                         : 'border-gray-700 bg-gray-800/50 hover:bg-gray-800'
@@ -177,7 +224,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
             </div>
 
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </Button>
           </form>
 
@@ -186,7 +240,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
               Already have an account?{' '}
               <button
                 onClick={() => onNavigate('login')}
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                disabled={isLoading}
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors disabled:opacity-50"
               >
                 Sign in
               </button>

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { emailService } from './emailService';
 
 export interface SignUpData {
   name: string;
@@ -12,42 +13,53 @@ export interface LoginData {
   password: string;
 }
 
+export interface AuthResult {
+  success: boolean;
+  message: string;
+  user?: any;
+  requiresVerification?: boolean;
+}
+
 export class AuthService {
+  private static instance: AuthService;
+
+  static getInstance(): AuthService {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+    return AuthService.instance;
+  }
+
   // Generate 6-digit OTP
   private generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Send OTP via email using Supabase Edge Function
-  private async sendOTPEmail(email: string, otp: string, name: string): Promise<void> {
-    try {
-      const { error } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email,
-          otp,
-          name
-        }
-      });
-
-      if (error) {
-        console.error('Error sending OTP email:', error);
-        // Fallback: For demo purposes, we'll show the OTP in an alert
-        console.log(`OTP for ${email}: ${otp}`);
-        alert(`Demo Mode: Your OTP is ${otp}`);
-      }
-    } catch (error) {
-      console.error('Error sending OTP email:', error);
-      // Fallback: For demo purposes, we'll show the OTP in an alert
-      console.log(`OTP for ${email}: ${otp}`);
-      alert(`Demo Mode: Your OTP is ${otp}`);
-    }
-  }
-
   // Sign up user and send OTP
-  async signUp(data: SignUpData): Promise<{ success: boolean; message: string }> {
+  async signUp(data: SignUpData): Promise<AuthResult> {
     try {
+      console.log('🚀 Starting signup process for:', data.email);
+
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('email, is_verified')
+        .eq('email', data.email)
+        .maybeSingle();
+
+      if (existingUser) {
+        if (existingUser.is_verified) {
+          return { 
+            success: false, 
+            message: 'An account with this email already exists. Please sign in instead.' 
+          };
+        } else {
+          // User exists but not verified, allow resending OTP
+          return await this.resendOTP(data.email);
+        }
+      }
+
       // Create user account with Supabase Auth
-      // The database trigger will automatically handle inserting into the users table
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -60,6 +72,7 @@ export class AuthService {
       });
 
       if (authError) {
+        console.error('❌ Auth signup error:', authError);
         return { success: false, message: authError.message };
       }
 
@@ -67,9 +80,42 @@ export class AuthService {
         return { success: false, message: 'Failed to create user account' };
       }
 
+      console.log('✅ Auth user created:', authData.user.id);
+
+      // The database trigger should have created the user record
+      // Let's verify it exists
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for trigger
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (userError || !userData) {
+        console.error('❌ User data not found after signup:', userError);
+        // Fallback: create user record manually
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email: data.email,
+            name: data.name,
+            user_type: data.userType,
+            is_verified: false
+          });
+
+        if (insertError) {
+          console.error('❌ Failed to create user record:', insertError);
+          return { success: false, message: 'Failed to create user profile' };
+        }
+      }
+
       // Generate and store OTP
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      console.log('🔐 Generated OTP:', otp);
 
       const { error: otpError } = await supabase
         .from('otp_verifications')
@@ -81,27 +127,39 @@ export class AuthService {
         });
 
       if (otpError) {
-        console.error('Error storing OTP:', otpError);
+        console.error('❌ Error storing OTP:', otpError);
         return { success: false, message: 'Failed to generate verification code' };
       }
 
+      console.log('✅ OTP stored in database');
+
       // Send OTP email
-      await this.sendOTPEmail(data.email, otp, data.name);
+      const emailResult = await emailService.sendOTPEmail(data.email, otp, data.name);
+      
+      if (!emailResult.success) {
+        console.error('❌ Failed to send OTP email');
+        // Don't fail the signup, just log the error
+      }
+
+      console.log('✅ Signup process completed successfully');
 
       return { 
         success: true, 
-        message: 'Account created successfully! Please check your email for the verification code.' 
+        message: 'Account created successfully! Please check your email for the verification code.',
+        requiresVerification: true
       };
     } catch (error) {
-      console.error('Sign up error:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('❌ Signup error:', error);
+      return { success: false, message: 'An unexpected error occurred during signup' };
     }
   }
 
   // Verify OTP
-  async verifyOTP(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+  async verifyOTP(email: string, otp: string): Promise<AuthResult> {
     try {
-      // Get the latest OTP for this email
+      console.log('🔍 Verifying OTP for:', email);
+
+      // Get the latest valid OTP for this email
       const { data: otpData, error: otpError } = await supabase
         .from('otp_verifications')
         .select('*')
@@ -113,9 +171,17 @@ export class AuthService {
         .limit(1)
         .maybeSingle();
 
-      if (otpError || !otpData) {
+      if (otpError) {
+        console.error('❌ OTP query error:', otpError);
+        return { success: false, message: 'Failed to verify code' };
+      }
+
+      if (!otpData) {
+        console.log('❌ Invalid or expired OTP');
         return { success: false, message: 'Invalid or expired verification code' };
       }
+
+      console.log('✅ Valid OTP found');
 
       // Mark OTP as used
       const { error: updateOtpError } = await supabase
@@ -124,43 +190,59 @@ export class AuthService {
         .eq('id', otpData.id);
 
       if (updateOtpError) {
-        console.error('Error updating OTP:', updateOtpError);
+        console.error('❌ Error updating OTP:', updateOtpError);
         return { success: false, message: 'Failed to verify code' };
       }
 
       // Update user verification status
-      const { error: userUpdateError } = await supabase
+      const { data: updatedUser, error: userUpdateError } = await supabase
         .from('users')
         .update({ is_verified: true })
-        .eq('email', email);
+        .eq('email', email)
+        .select('*')
+        .single();
 
       if (userUpdateError) {
-        console.error('Error updating user verification:', userUpdateError);
+        console.error('❌ Error updating user verification:', userUpdateError);
         return { success: false, message: 'Failed to verify user' };
       }
 
-      return { success: true, message: 'Email verified successfully!' };
+      console.log('✅ User verified successfully');
+
+      // Send welcome email
+      await emailService.sendWelcomeEmail(email, updatedUser.name);
+
+      return { 
+        success: true, 
+        message: 'Email verified successfully!',
+        user: updatedUser
+      };
     } catch (error) {
-      console.error('OTP verification error:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('❌ OTP verification error:', error);
+      return { success: false, message: 'An unexpected error occurred during verification' };
     }
   }
 
   // Sign in user
-  async signIn(data: LoginData): Promise<{ success: boolean; message: string; user?: any }> {
+  async signIn(data: LoginData): Promise<AuthResult> {
     try {
+      console.log('🔑 Signing in user:', data.email);
+
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
       });
 
       if (authError) {
+        console.error('❌ Auth signin error:', authError);
         return { success: false, message: authError.message };
       }
 
       if (!authData.user) {
         return { success: false, message: 'Invalid credentials' };
       }
+
+      console.log('✅ Auth signin successful');
 
       // Get user data from our custom table
       const { data: userData, error: userError } = await supabase
@@ -170,12 +252,20 @@ export class AuthService {
         .single();
 
       if (userError || !userData) {
-        return { success: false, message: 'User data not found' };
+        console.error('❌ User data not found:', userError);
+        return { success: false, message: 'User profile not found' };
       }
 
       if (!userData.is_verified) {
-        return { success: false, message: 'Please verify your email before signing in' };
+        console.log('⚠️ User not verified');
+        return { 
+          success: false, 
+          message: 'Please verify your email before signing in',
+          requiresVerification: true
+        };
       }
+
+      console.log('✅ Signin completed successfully');
 
       return { 
         success: true, 
@@ -183,24 +273,28 @@ export class AuthService {
         user: userData
       };
     } catch (error) {
-      console.error('Sign in error:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('❌ Signin error:', error);
+      return { success: false, message: 'An unexpected error occurred during signin' };
     }
   }
 
   // Sign out user
-  async signOut(): Promise<{ success: boolean; message: string }> {
+  async signOut(): Promise<AuthResult> {
     try {
+      console.log('👋 Signing out user');
+
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('❌ Signout error:', error);
         return { success: false, message: error.message };
       }
 
+      console.log('✅ Signout successful');
       return { success: true, message: 'Signed out successfully!' };
     } catch (error) {
-      console.error('Sign out error:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('❌ Signout error:', error);
+      return { success: false, message: 'An unexpected error occurred during signout' };
     }
   }
 
@@ -225,14 +319,16 @@ export class AuthService {
 
       return userData;
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error('❌ Get current user error:', error);
       return null;
     }
   }
 
   // Resend OTP
-  async resendOTP(email: string): Promise<{ success: boolean; message: string }> {
+  async resendOTP(email: string): Promise<AuthResult> {
     try {
+      console.log('🔄 Resending OTP for:', email);
+
       // Check if user exists
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -248,16 +344,18 @@ export class AuthService {
         return { success: false, message: 'Email is already verified' };
       }
 
-      // Generate new OTP
-      const otp = this.generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-
       // Mark previous OTPs as used
       await supabase
         .from('otp_verifications')
         .update({ is_used: true })
         .eq('email', email)
         .eq('is_used', false);
+
+      // Generate new OTP
+      const otp = this.generateOTP();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      console.log('🔐 Generated new OTP:', otp);
 
       // Insert new OTP
       const { error: otpError } = await supabase
@@ -270,22 +368,47 @@ export class AuthService {
         });
 
       if (otpError) {
-        console.error('Error storing new OTP:', otpError);
+        console.error('❌ Error storing new OTP:', otpError);
         return { success: false, message: 'Failed to generate new verification code' };
       }
 
       // Send OTP email
-      await this.sendOTPEmail(email, otp, userData.name);
+      const emailResult = await emailService.sendOTPEmail(email, otp, userData.name);
+      
+      if (!emailResult.success) {
+        console.error('❌ Failed to send OTP email');
+      }
+
+      console.log('✅ OTP resent successfully');
 
       return { 
         success: true, 
         message: 'New verification code sent to your email!' 
       };
     } catch (error) {
-      console.error('Resend OTP error:', error);
+      console.error('❌ Resend OTP error:', error);
       return { success: false, message: 'An unexpected error occurred' };
+    }
+  }
+
+  // Check if email exists and is verified
+  async checkEmailStatus(email: string): Promise<{ exists: boolean; verified: boolean }> {
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('is_verified')
+        .eq('email', email)
+        .maybeSingle();
+
+      return {
+        exists: !!userData,
+        verified: userData?.is_verified || false
+      };
+    } catch (error) {
+      console.error('❌ Check email status error:', error);
+      return { exists: false, verified: false };
     }
   }
 }
 
-export const authService = new AuthService();
+export const authService = AuthService.getInstance();

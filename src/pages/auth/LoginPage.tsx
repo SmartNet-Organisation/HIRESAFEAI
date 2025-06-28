@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Zap, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Zap, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useAuth } from '../../hooks/useAuth';
+import { authService } from '../../services/authService';
 
 interface LoginPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -13,15 +13,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
     if (!password) {
@@ -34,20 +34,70 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    if (!validateForm()) {
+      return;
+    }
 
+    setIsLoading(true);
     setErrors({});
 
     try {
-      const result = await login(email, password);
+      console.log('🔑 Attempting login...');
+      
+      const result = await authService.signIn({ 
+        email: email.toLowerCase().trim(), 
+        password 
+      });
       
       if (result.success && result.user) {
+        console.log('✅ Login successful');
         onNavigate('dashboard', { userName: result.user.name });
       } else {
-        setErrors({ general: result.message });
+        console.error('❌ Login failed:', result.message);
+        
+        if (result.requiresVerification) {
+          // User needs to verify email
+          setErrors({ 
+            general: `${result.message} Would you like to verify your email now?` 
+          });
+          
+          // Optionally navigate to OTP verification
+          setTimeout(() => {
+            const shouldVerify = window.confirm('Would you like to verify your email now?');
+            if (shouldVerify) {
+              onNavigate('otp-verification', { 
+                email: email.toLowerCase().trim(), 
+                userName: 'User' 
+              });
+            }
+          }, 1000);
+        } else {
+          setErrors({ general: result.message });
+        }
       }
     } catch (error) {
+      console.error('❌ Unexpected login error:', error);
       setErrors({ general: 'An unexpected error occurred. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: 'email' | 'password', value: string) => {
+    if (field === 'email') {
+      setEmail(value);
+    } else {
+      setPassword(value);
+    }
+    
+    // Clear errors when user starts typing
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
+    
+    if (errors.general) {
+      setErrors({ ...errors, general: '' });
     }
   };
 
@@ -59,6 +109,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         <button
           onClick={() => onNavigate('landing')}
           className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors"
+          disabled={isLoading}
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back to Home
@@ -89,8 +140,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
               label="Email Address"
               placeholder="Enter your email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               error={errors.email}
+              disabled={isLoading}
             />
 
             <div>
@@ -99,14 +151,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all pr-12"
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all pr-12 disabled:opacity-50"
                   placeholder="Enter your password"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -117,7 +171,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             </div>
 
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </form>
 
@@ -126,7 +187,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
               Don't have an account?{' '}
               <button
                 onClick={() => onNavigate('signup')}
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                disabled={isLoading}
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors disabled:opacity-50"
               >
                 Sign up for free
               </button>
