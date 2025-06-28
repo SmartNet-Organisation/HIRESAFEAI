@@ -82,34 +82,8 @@ export class AuthService {
 
       console.log('✅ Auth user created:', authData.user.id);
 
-      // The database trigger should have created the user record
-      // Let's verify it exists
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for trigger
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (userError || !userData) {
-        console.error('❌ User data not found after signup:', userError);
-        // Fallback: create user record manually
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: data.email,
-            name: data.name,
-            user_type: data.userType,
-            is_verified: false
-          });
-
-        if (insertError) {
-          console.error('❌ Failed to create user record:', insertError);
-          return { success: false, message: 'Failed to create user profile' };
-        }
-      }
+      // The database trigger will automatically create the user record
+      // No need to manually insert or check for user data
 
       // Generate and store OTP
       const otp = this.generateOTP();
