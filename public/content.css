@@ -1,0 +1,49 @@
+/* HireSafe AI Content Script Styles */
+
+#hiresafe-scan-btn {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+#hiresafe-scan-btn:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4) !important;
+}
+
+#hiresafe-status {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Ensure our elements stay on top */
+#hiresafe-scan-btn,
+#hiresafe-status {
+  z-index: 2147483647 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #hiresafe-scan-btn {
+    top: 10px !important;
+    right: 10px !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+  
+  #hiresafe-status {
+    top: 60px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: none !important;
+  }
+}
