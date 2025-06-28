@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, ArrowLeft, Users, Building, GraduationCap, Briefcase, Loader2 } from 'lucide-react';
+import { Zap, ArrowLeft, Users, Building, GraduationCap, Briefcase, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { authService } from '../../services/authService';
@@ -16,6 +16,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
     confirmPassword: '',
     userType: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -184,25 +186,55 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                type="password"
-                label="Password"
-                placeholder="Create password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                error={errors.password}
-                disabled={isLoading}
-              />
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all pr-12 disabled:opacity-50"
+                    placeholder="Create password"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+                )}
+              </div>
 
-              <Input
-                type="password"
-                label="Confirm Password"
-                placeholder="Confirm password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                error={errors.confirmPassword}
-                disabled={isLoading}
-              />
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all pr-12 disabled:opacity-50"
+                    placeholder="Confirm password"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
+                )}
+              </div>
             </div>
 
             <div>
