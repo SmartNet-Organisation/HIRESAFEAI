@@ -53,10 +53,10 @@ Note: This is a demo. In production, the extension would be available on the Chr
             </button>
             <a href="#about" className="text-gray-300 hover:text-white transition-colors">About</a>
             
-            {/* Add to Chrome Button */}
+            {/* Add to Chrome Button - Updated styling */}
             <button
               onClick={handleAddToChrome}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
+              className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
             >
               <Download className="h-4 w-4" />
               <span>Add to Chrome</span>
@@ -97,7 +97,7 @@ Note: This is a demo. In production, the extension would be available on the Chr
             {/* Mobile Add to Chrome Button */}
             <button
               onClick={handleAddToChrome}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium w-full justify-center"
+              className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium w-full justify-center hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
               <Download className="h-4 w-4" />
               <span>Add to Chrome</span>
