@@ -46,12 +46,12 @@ export class AuthService {
   // Sign up user and send OTP
   async signUp(data: SignUpData): Promise<{ success: boolean; message: string }> {
     try {
-      // Check if user already exists
+      // Check if user already exists - use maybeSingle() instead of single()
       const { data: existingUser } = await supabase
         .from('users')
         .select('email')
         .eq('email', data.email)
-        .single();
+        .maybeSingle();
 
       if (existingUser) {
         return { success: false, message: 'User with this email already exists' };
