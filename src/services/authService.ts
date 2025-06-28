@@ -83,13 +83,21 @@ export class AuthService {
       console.log('✅ Auth user created:', authData.user.id);
 
       // The database trigger will automatically create the user record
-      // No need to manually insert or check for user data
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Generate and store OTP
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
       console.log('🔐 Generated OTP:', otp);
+      console.log('⏰ OTP expires at:', expiresAt.toISOString());
+
+      // Clear any existing OTPs for this email first
+      await supabase
+        .from('otp_verifications')
+        .delete()
+        .eq('email', data.email);
 
       const { error: otpError } = await supabase
         .from('otp_verifications')
@@ -132,13 +140,28 @@ export class AuthService {
   async verifyOTP(email: string, otp: string): Promise<AuthResult> {
     try {
       console.log('🔍 Verifying OTP for:', email);
+      console.log('🔐 OTP provided:', otp);
+      console.log('⏰ Current time:', new Date().toISOString());
+
+      // First, let's check all OTPs for this email to debug
+      const { data: allOtps, error: debugError } = await supabase
+        .from('otp_verifications')
+        .select('*')
+        .eq('email', email)
+        .order('created_at', { ascending: false });
+
+      if (debugError) {
+        console.error('❌ Debug query error:', debugError);
+      } else {
+        console.log('🔍 All OTPs for email:', allOtps);
+      }
 
       // Get the latest valid OTP for this email
       const { data: otpData, error: otpError } = await supabase
         .from('otp_verifications')
         .select('*')
         .eq('email', email)
-        .eq('otp_code', otp)
+        .eq('otp_code', otp.trim())
         .eq('is_used', false)
         .gte('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
@@ -150,9 +173,31 @@ export class AuthService {
         return { success: false, message: 'Failed to verify code' };
       }
 
+      console.log('🔍 Found OTP data:', otpData);
+
       if (!otpData) {
-        console.log('❌ Invalid or expired OTP');
-        return { success: false, message: 'Invalid or expired verification code' };
+        // Let's check if there's an OTP that matches but might be expired or used
+        const { data: expiredOtp } = await supabase
+          .from('otp_verifications')
+          .select('*')
+          .eq('email', email)
+          .eq('otp_code', otp.trim())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (expiredOtp) {
+          if (expiredOtp.is_used) {
+            console.log('❌ OTP already used');
+            return { success: false, message: 'This verification code has already been used' };
+          } else if (new Date(expiredOtp.expires_at) < new Date()) {
+            console.log('❌ OTP expired');
+            return { success: false, message: 'Verification code has expired. Please request a new one' };
+          }
+        }
+
+        console.log('❌ Invalid OTP - no matching record found');
+        return { success: false, message: 'Invalid verification code. Please check and try again' };
       }
 
       console.log('✅ Valid OTP found');
@@ -318,18 +363,18 @@ export class AuthService {
         return { success: false, message: 'Email is already verified' };
       }
 
-      // Mark previous OTPs as used
+      // Clear all previous OTPs for this email
       await supabase
         .from('otp_verifications')
-        .update({ is_used: true })
-        .eq('email', email)
-        .eq('is_used', false);
+        .delete()
+        .eq('email', email);
 
       // Generate new OTP
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
       console.log('🔐 Generated new OTP:', otp);
+      console.log('⏰ New OTP expires at:', expiresAt.toISOString());
 
       // Insert new OTP
       const { error: otpError } = await supabase

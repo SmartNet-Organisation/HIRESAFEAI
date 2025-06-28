@@ -122,7 +122,8 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({
     setSuccess('');
 
     try {
-      console.log('🔍 Verifying OTP...');
+      console.log('🔍 Verifying OTP with code:', code);
+      console.log('📧 For email:', email);
       
       const result = await authService.verifyOTP(email, code);
       
