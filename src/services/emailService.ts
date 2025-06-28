@@ -22,17 +22,25 @@ export class EmailService {
       // Show OTP in alert for demo purposes with better formatting
       const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
                           `Hello ${name}!\n\n` +
-                          `Your verification code is: ${otp}\n\n` +
+                          `Your verification code is:\n\n` +
+                          `${otp}\n\n` +
                           `This code will expire in 10 minutes.\n\n` +
                           `📧 Email: ${email}\n\n` +
+                          `Please copy this code and enter it on the verification page.\n\n` +
                           `Note: In production, this code would be sent to your email inbox.`;
       
-      alert(alertMessage);
+      // Use a promise to handle the alert properly
+      return new Promise((resolve) => {
+        // Show the alert
+        alert(alertMessage);
+        
+        // Return success immediately after alert is dismissed
+        resolve({
+          success: true,
+          message: 'Verification code sent successfully!'
+        });
+      });
       
-      return {
-        success: true,
-        message: 'Verification code sent successfully!'
-      };
     } catch (error) {
       console.error('Email service error:', error);
       return {

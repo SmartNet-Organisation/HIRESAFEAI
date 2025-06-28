@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Zap, ArrowLeft, Mail, RefreshCw, CheckCircle, Loader2 } from 'lucide-react';
+import { Zap, ArrowLeft, Mail, RefreshCw, CheckCircle, Loader2, Copy } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { authService } from '../../services/authService';
 
@@ -164,7 +164,7 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({
       
       if (result.success) {
         console.log('✅ OTP resent successfully');
-        setSuccess('New verification code sent to your email!');
+        setSuccess('New verification code sent! Check the alert for your new code.');
         setTimeLeft(600); // Reset timer
         setCanResend(false);
         setOtp(['', '', '', '', '', '']);
@@ -222,6 +222,19 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({
           <div className="flex justify-center mb-6">
             <div className="bg-purple-500/20 p-4 rounded-full">
               <Mail className="h-8 w-8 text-purple-400" />
+            </div>
+          </div>
+
+          {/* Info Message */}
+          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl">
+            <div className="flex items-start">
+              <Copy className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-blue-400 text-sm font-medium mb-1">Demo Mode</p>
+                <p className="text-blue-300 text-sm">
+                  The verification code was shown in the alert popup. If you missed it, click "Resend Code" to see it again.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -294,13 +307,13 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({
             <p className="text-gray-400 text-sm mb-2">Didn't receive the code?</p>
             <button
               onClick={handleResendOTP}
-              disabled={isResending || !canResend}
+              disabled={isResending || (!canResend && timeLeft > 540)}
               className="flex items-center justify-center space-x-2 text-purple-400 hover:text-purple-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
             >
               <RefreshCw className={`h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
               <span>
                 {isResending ? 'Sending...' : 
-                 !canResend ? `Resend in ${Math.ceil((540 - (600 - timeLeft)) / 60)}m` : 
+                 (!canResend && timeLeft > 540) ? `Resend in ${Math.ceil((600 - timeLeft) / 60)}m` : 
                  'Resend Code'}
               </span>
             </button>
@@ -310,7 +323,7 @@ export const OTPVerificationPage: React.FC<OTPVerificationPageProps> = ({
         {/* Help Text */}
         <div className="mt-6 text-center">
           <p className="text-gray-500 text-xs">
-            Check your spam folder if you don't see the email in your inbox
+            In production, the code would be sent to your email inbox
           </p>
         </div>
       </div>

@@ -89,15 +89,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
       });
 
       if (result.success) {
-        console.log('✅ Signup successful, navigating to OTP verification');
+        console.log('✅ Signup successful, showing OTP and navigating to verification');
         
-        // Wait a moment for the alert to be dismissed, then navigate
-        setTimeout(() => {
-          onNavigate('otp-verification', { 
-            email: formData.email.toLowerCase().trim(), 
-            userName: formData.name.trim()
-          });
-        }, 2000); // Give user time to see the OTP in the alert
+        // Navigate immediately to OTP verification page
+        // The email service will show the OTP alert, and user can reference it on the verification page
+        onNavigate('otp-verification', { 
+          email: formData.email.toLowerCase().trim(), 
+          userName: formData.name.trim()
+        });
         
       } else {
         console.error('❌ Signup failed:', result.message);
@@ -158,7 +157,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* Success Message */}
+          {/* Loading Message */}
           {isLoading && (
             <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl">
               <p className="text-blue-400 text-sm">Creating your account and sending verification email...</p>
