@@ -10,22 +10,37 @@ export class EmailService {
 
   async sendOTPEmail(email: string, otp: string, name: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log(`📧 Sending OTP email to ${email}`);
+      console.log(`📧 Attempting to send OTP email to ${email}`);
       
       // Check if we're in production mode with Resend API key
       const resendApiKey = import.meta.env.VITE_RESEND_API_KEY;
       
-      if (resendApiKey && resendApiKey !== 'your-resend-api-key-here') {
+      console.log('🔑 Environment check:');
+      console.log('  - API key exists:', !!resendApiKey);
+      console.log('  - API key starts with re_:', resendApiKey?.startsWith('re_'));
+      console.log('  - API key is not placeholder:', resendApiKey !== 'your-resend-api-key-here');
+      console.log('  - Full API key:', resendApiKey);
+      
+      if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 'your-resend-api-key-here') {
         // Production mode - send real email via Resend
+        console.log('✅ Using production mode - sending real email via Resend');
         return await this.sendRealEmail(email, otp, name, resendApiKey);
       } else {
-        // Demo mode - show OTP in alert (fallback)
-        console.log('⚠️ No Resend API key found, using demo mode');
-        return await this.sendDemoEmail(email, otp, name);
+        // Demo mode - show in console only
+        console.log('⚠️ Using demo mode - API key not valid or not found');
+        console.log(`📧 Demo mode: OTP for ${email} is: ${otp}`);
+        
+        // Show alert in demo mode for now
+        alert(`🛡️ HireSafe AI - Email Verification (Demo Mode)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Add your Resend API key to .env file to send real emails.`);
+        
+        return {
+          success: true,
+          message: 'Verification code sent! (Demo mode - check alert popup)'
+        };
       }
       
     } catch (error) {
-      console.error('Email service error:', error);
+      console.error('❌ Email service error:', error);
       return {
         success: false,
         message: 'Failed to send verification code. Please try again.'
@@ -35,6 +50,9 @@ export class EmailService {
 
   private async sendRealEmail(email: string, otp: string, name: string, apiKey: string): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('📧 Sending real email via Resend API...');
+      console.log('📧 Email details:', { to: email, from: 'HireSafe AI <noreply@hiresafe.ai>' });
+      
       const emailData = {
         from: 'HireSafe AI <noreply@hiresafe.ai>',
         to: [email],
@@ -42,6 +60,8 @@ export class EmailService {
         html: this.generateEmailHTML(otp, name, email)
       };
 
+      console.log('📧 Making API request to Resend...');
+      
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -51,17 +71,42 @@ export class EmailService {
         body: JSON.stringify(emailData),
       });
 
+      console.log('📧 Resend API response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('❌ Resend API error:', errorData);
         
-        // Fallback to demo mode if email fails
-        console.log('📧 Falling back to demo mode...');
-        return await this.sendDemoEmail(email, otp, name);
+        // Show specific error message
+        if (errorData.message) {
+          console.error('❌ Resend error message:', errorData.message);
+          
+          // Check for common errors
+          if (errorData.message.includes('API key')) {
+            return {
+              success: false,
+              message: 'Invalid Resend API key. Please check your .env file.'
+            };
+          } else if (errorData.message.includes('domain')) {
+            return {
+              success: false,
+              message: 'Email domain not verified in Resend. Please verify your domain or use a verified sender.'
+            };
+          }
+        }
+        
+        // Fallback to demo mode with alert
+        console.log('📧 Falling back to demo mode with alert...');
+        alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Email sending failed, but here's your code.`);
+        
+        return {
+          success: true,
+          message: 'Verification code provided! (Email sending failed - check console for details)'
+        };
       }
 
       const result = await response.json();
-      console.log('✅ Email sent successfully via Resend:', result.id);
+      console.log('✅ Email sent successfully via Resend:', result);
 
       return {
         success: true,
@@ -70,38 +115,16 @@ export class EmailService {
 
     } catch (error) {
       console.error('❌ Real email sending failed:', error);
-      // Fallback to demo mode
-      console.log('📧 Falling back to demo mode...');
-      return await this.sendDemoEmail(email, otp, name);
-    }
-  }
-
-  private async sendDemoEmail(email: string, otp: string, name: string): Promise<{ success: boolean; message: string }> {
-    console.log(`📧 Demo mode: Showing OTP for ${email}`);
-    console.log(`🔐 OTP Code: ${otp}`);
-    console.log(`👤 User: ${name}`);
-    
-    // Simulate email sending delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Show OTP in alert for demo purposes
-    const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
-                        `Hello ${name}!\n\n` +
-                        `Your verification code is:\n\n` +
-                        `${otp}\n\n` +
-                        `This code will expire in 10 minutes.\n\n` +
-                        `📧 Email: ${email}\n\n` +
-                        `Please copy this code and enter it on the verification page.\n\n` +
-                        `Note: Demo mode - Add VITE_RESEND_API_KEY to .env for real emails.`;
-    
-    // Use a promise to handle the alert properly
-    return new Promise((resolve) => {
-      alert(alertMessage);
-      resolve({
+      
+      // Fallback to demo mode with alert
+      console.log('📧 Falling back to demo mode with alert...');
+      alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Network error occurred.`);
+      
+      return {
         success: true,
-        message: 'Verification code sent successfully! (Demo mode - check alert)'
-      });
-    });
+        message: 'Verification code provided! (Network error - check console for details)'
+      };
+    }
   }
 
   private generateEmailHTML(otp: string, name: string, email: string): string {
@@ -180,16 +203,6 @@ export class EmailService {
           .security-note strong {
             color: #f59e0b;
           }
-          .btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin: 20px 0;
-          }
         </style>
       </head>
       <body>
@@ -247,7 +260,7 @@ export class EmailService {
       
       const resendApiKey = import.meta.env.VITE_RESEND_API_KEY;
       
-      if (resendApiKey && resendApiKey !== 'your-resend-api-key-here') {
+      if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 'your-resend-api-key-here') {
         // Send real welcome email
         const emailData = {
           from: 'HireSafe AI <welcome@hiresafe.ai>',
@@ -269,7 +282,8 @@ export class EmailService {
           const result = await response.json();
           console.log('✅ Welcome email sent successfully:', result.id);
         } else {
-          console.error('❌ Failed to send welcome email');
+          const errorData = await response.json();
+          console.error('❌ Failed to send welcome email:', errorData);
         }
       } else {
         // Demo mode
