@@ -46,22 +46,14 @@ export class AuthService {
       console.log('🚀 Mock signup for:', data.email);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Generate mock OTP and show it
+      // Generate mock OTP - NO ALERT
       const mockOtp = this.generateOTP();
-      const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
-                          `Hello ${data.name}!\n\n` +
-                          `Your verification code is:\n\n` +
-                          `${mockOtp}\n\n` +
-                          `This code will expire in 10 minutes.\n\n` +
-                          `📧 Email: ${data.email}\n\n` +
-                          `Please copy this code and enter it on the verification page.\n\n` +
-                          `Note: This is mock mode - Supabase not connected.`;
-      
-      alert(alertMessage);
+      console.log(`📧 Mock mode: OTP for ${data.email} is: ${mockOtp}`);
+      console.log(`📧 COPY THIS CODE: ${mockOtp}`);
       
       return { 
         success: true, 
-        message: 'Account created successfully! Please check the alert popup for your verification code.',
+        message: `Account created! Your verification code is: ${mockOtp} (Mock mode)`,
         requiresVerification: true
       };
     }
@@ -174,15 +166,11 @@ export class AuthService {
       // Send OTP email
       const emailResult = await emailService.sendOTPEmail(cleanEmail, otp, data.name);
       
-      if (!emailResult.success) {
-        console.error('❌ Failed to send OTP email');
-      }
-
       console.log('✅ Signup process completed successfully');
 
       return { 
         success: true, 
-        message: 'Account created successfully! Please check the alert popup for your verification code.',
+        message: emailResult.message,
         requiresVerification: true
       };
     } catch (error) {
@@ -443,21 +431,14 @@ export class AuthService {
       console.log('🔄 Mock resend OTP for:', email);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Generate mock OTP and show it
+      // Generate mock OTP - NO ALERT
       const mockOtp = this.generateOTP();
-      const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
-                          `New verification code:\n\n` +
-                          `${mockOtp}\n\n` +
-                          `This code will expire in 10 minutes.\n\n` +
-                          `📧 Email: ${email}\n\n` +
-                          `Please copy this code and enter it on the verification page.\n\n` +
-                          `Note: This is mock mode - Supabase not connected.`;
-      
-      alert(alertMessage);
+      console.log(`📧 Mock mode: New OTP for ${email} is: ${mockOtp}`);
+      console.log(`📧 COPY THIS CODE: ${mockOtp}`);
       
       return { 
         success: true, 
-        message: 'New verification code sent! Check the alert popup for your new code.' 
+        message: `New verification code: ${mockOtp} (Mock mode)` 
       };
     }
 
@@ -510,16 +491,12 @@ export class AuthService {
 
       // Send OTP email
       const emailResult = await emailService.sendOTPEmail(cleanEmail, otp, userData.name);
-      
-      if (!emailResult.success) {
-        console.error('❌ Failed to send OTP email');
-      }
 
       console.log('✅ OTP resent successfully');
 
       return { 
         success: true, 
-        message: 'New verification code sent! Check the alert popup for your new code.' 
+        message: emailResult.message
       };
     } catch (error) {
       console.error('❌ Resend OTP error:', error);
