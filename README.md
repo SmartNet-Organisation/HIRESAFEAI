@@ -1,17 +1,20 @@
 # HireSafe AI - Job Scam Detection Platform
 
-A comprehensive AI-powered platform that protects job seekers from fraudulent job postings and scams using advanced machine learning.
+A comprehensive AI-powered platform that protects job seekers from fraudulent job postings and scams using advanced machine learning and blockchain technology.
 
 ## Features
 
 - **Real-Time AI Scam Detection**: Advanced NLP analysis of job postings
+- **Email Verification System**: OTP-based secure account verification
 - **User Dashboard**: Comprehensive protection monitoring
 - **Multiple User Types**: Job seekers, recruiters, career centers, and institutions
+- **Blockchain Integration**: Immutable scam reports on Algorand
 - **Responsive Design**: Beautiful, production-ready UI
 
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
 - **Icons**: Lucide React
 - **Build Tool**: Vite
 - **Deployment**: Ready for production deployment
@@ -22,6 +25,7 @@ A comprehensive AI-powered platform that protects job seekers from fraudulent jo
 
 - Node.js 18+ 
 - npm or yarn
+- Supabase account
 
 ### Installation
 
@@ -36,9 +40,38 @@ cd hiresafe-ai
 npm install
 ```
 
-3. Start the development server:
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+4. Update `.env` with your Supabase credentials:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+5. Apply database migrations:
+```bash
+npm run apply-migration
+```
+
+6. Start the development server:
 ```bash
 npm run dev
+```
+
+## Database Setup
+
+The application uses Supabase with the following tables:
+
+- **users**: User profiles and verification status
+- **otp_verifications**: Email verification codes
+
+Run the migration script to set up the database schema:
+```bash
+npm run apply-migration
 ```
 
 ## Project Structure
@@ -51,16 +84,19 @@ src/
 │   └── dashboard/      # Dashboard-specific components
 ├── pages/              # Page components
 │   └── auth/          # Authentication pages
-├── services/           # API services (currently mock)
+├── services/           # API services
 ├── hooks/              # Custom React hooks
 ├── lib/                # Library configurations
 ├── types/              # TypeScript type definitions
 └── utils/              # Utility functions
 ```
 
-## Current Status
+## Authentication Flow
 
-The application is currently running in **mock mode** with simulated authentication and email services. The frontend is fully functional and ready for backend integration.
+1. **Sign Up**: User creates account with email/password
+2. **OTP Verification**: Email verification with 6-digit code
+3. **Sign In**: Authenticated access to dashboard
+4. **Dashboard**: Protected user interface
 
 ## Available Scripts
 
@@ -68,15 +104,31 @@ The application is currently running in **mock mode** with simulated authenticat
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run apply-migration` - Apply database migrations
 
-## Next Steps
+## Environment Variables
 
-To integrate with a real backend:
+Required environment variables:
 
-1. Set up your database (Supabase, Firebase, etc.)
-2. Replace the mock services in `src/services/` with real implementations
-3. Add environment variables for your backend configuration
-4. Update the authentication flow to use your chosen provider
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for migrations)
+
+## Deployment
+
+The application is ready for deployment on platforms like:
+
+- Vercel
+- Netlify
+- AWS Amplify
+- Any static hosting service
+
+Build the project:
+```bash
+npm run build
+```
+
+The `dist` folder contains the production-ready files.
 
 ## Contributing
 

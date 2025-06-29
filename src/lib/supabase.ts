@@ -1,9 +1,18 @@
-// Placeholder file - Supabase integration removed
-// This file will be recreated when you reintegrate Supabase
+import { createClient } from '@supabase/supabase-js';
 
-export const supabase = null;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Placeholder types
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('⚠️ Supabase environment variables not found. Running in mock mode.');
+  console.log('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+}
+
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Database types
 export interface User {
   id: string;
   email: string;
