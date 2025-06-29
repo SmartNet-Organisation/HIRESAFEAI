@@ -19,19 +19,25 @@ export class EmailService {
       console.log('  - API key exists:', !!resendApiKey);
       console.log('  - API key starts with re_:', resendApiKey?.startsWith('re_'));
       console.log('  - API key is not placeholder:', resendApiKey !== 'your-resend-api-key-here');
-      console.log('  - Full API key:', resendApiKey);
+      console.log('  - API key length:', resendApiKey?.length || 0);
+      console.log('  - First 10 chars:', resendApiKey?.substring(0, 10) || 'none');
       
-      if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 'your-resend-api-key-here') {
+      if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 'your-resend-api-key-here' && resendApiKey.length > 10) {
         // Production mode - send real email via Resend
         console.log('✅ Using production mode - sending real email via Resend');
         return await this.sendRealEmail(email, otp, name, resendApiKey);
       } else {
         // Demo mode - show in console only
         console.log('⚠️ Using demo mode - API key not valid or not found');
+        console.log('⚠️ Reasons for demo mode:');
+        console.log('  - No API key:', !resendApiKey);
+        console.log('  - Wrong format:', !resendApiKey?.startsWith('re_'));
+        console.log('  - Is placeholder:', resendApiKey === 'your-resend-api-key-here');
+        console.log('  - Too short:', (resendApiKey?.length || 0) <= 10);
         console.log(`📧 Demo mode: OTP for ${email} is: ${otp}`);
         
         // Show alert in demo mode for now
-        alert(`🛡️ HireSafe AI - Email Verification (Demo Mode)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Add your Resend API key to .env file to send real emails.`);
+        alert(`🛡️ HireSafe AI - Email Verification (Demo Mode)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Add your valid Resend API key to .env file to send real emails.\n\nMake sure your .env file contains:\nVITE_RESEND_API_KEY=re_your_actual_api_key_here`);
         
         return {
           success: true,
@@ -52,6 +58,7 @@ export class EmailService {
     try {
       console.log('📧 Sending real email via Resend API...');
       console.log('📧 Email details:', { to: email, from: 'HireSafe AI <noreply@hiresafe.ai>' });
+      console.log('📧 Using API key:', apiKey.substring(0, 10) + '...');
       
       const emailData = {
         from: 'HireSafe AI <noreply@hiresafe.ai>',
@@ -72,9 +79,19 @@ export class EmailService {
       });
 
       console.log('📧 Resend API response status:', response.status);
+      console.log('📧 Resend API response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('❌ Resend API error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+        
         console.error('❌ Resend API error:', errorData);
         
         // Show specific error message
@@ -82,22 +99,27 @@ export class EmailService {
           console.error('❌ Resend error message:', errorData.message);
           
           // Check for common errors
-          if (errorData.message.includes('API key')) {
+          if (errorData.message.includes('API key') || errorData.message.includes('Unauthorized')) {
             return {
               success: false,
-              message: 'Invalid Resend API key. Please check your .env file.'
+              message: 'Invalid Resend API key. Please check your .env file and make sure you have a valid API key from resend.com'
             };
-          } else if (errorData.message.includes('domain')) {
+          } else if (errorData.message.includes('domain') || errorData.message.includes('sender')) {
             return {
               success: false,
-              message: 'Email domain not verified in Resend. Please verify your domain or use a verified sender.'
+              message: 'Email domain not verified in Resend. Please verify your domain in Resend dashboard or use their test domain.'
+            };
+          } else if (errorData.message.includes('rate limit')) {
+            return {
+              success: false,
+              message: 'Rate limit exceeded. Please wait a moment and try again.'
             };
           }
         }
         
         // Fallback to demo mode with alert
         console.log('📧 Falling back to demo mode with alert...');
-        alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Email sending failed, but here's your code.`);
+        alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Email sending failed - ${errorData.message || 'Unknown error'}`);
         
         return {
           success: true,
@@ -110,7 +132,7 @@ export class EmailService {
 
       return {
         success: true,
-        message: 'Verification code sent to your email!'
+        message: 'Verification code sent to your email! Check your inbox (and spam folder).'
       };
 
     } catch (error) {
@@ -118,7 +140,7 @@ export class EmailService {
       
       // Fallback to demo mode with alert
       console.log('📧 Falling back to demo mode with alert...');
-      alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Network error occurred.`);
+      alert(`🛡️ HireSafe AI - Email Verification (Fallback)\n\nYour verification code is: ${otp}\n\nEmail: ${email}\n\nNote: Network error occurred - ${error.message}`);
       
       return {
         success: true,
