@@ -45,9 +45,23 @@ export class AuthService {
     if (!this.isSupabaseAvailable()) {
       console.log('🚀 Mock signup for:', data.email);
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate mock OTP and show it
+      const mockOtp = this.generateOTP();
+      const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
+                          `Hello ${data.name}!\n\n` +
+                          `Your verification code is:\n\n` +
+                          `${mockOtp}\n\n` +
+                          `This code will expire in 10 minutes.\n\n` +
+                          `📧 Email: ${data.email}\n\n` +
+                          `Please copy this code and enter it on the verification page.\n\n` +
+                          `Note: This is mock mode - Supabase not connected.`;
+      
+      alert(alertMessage);
+      
       return { 
         success: true, 
-        message: 'Account created successfully! (Mock mode - Supabase not connected)',
+        message: 'Account created successfully! Please check the alert popup for your verification code.',
         requiresVerification: true
       };
     }
@@ -111,6 +125,23 @@ export class AuthService {
       }
 
       console.log('✅ Auth user created:', authData.user.id);
+
+      // Wait a moment for the trigger to create the user profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify user was created by trigger
+      const { data: createdUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (userCheckError || !createdUser) {
+        console.error('❌ User not created by database trigger:', createdUser);
+        return { success: false, message: 'Failed to create user profile. Please try again.' };
+      }
+
+      console.log('✅ User profile created by trigger');
 
       // Generate and store OTP
       const otp = this.generateOTP();
@@ -411,9 +442,22 @@ export class AuthService {
     if (!this.isSupabaseAvailable()) {
       console.log('🔄 Mock resend OTP for:', email);
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate mock OTP and show it
+      const mockOtp = this.generateOTP();
+      const alertMessage = `🛡️ HireSafe AI - Email Verification\n\n` +
+                          `New verification code:\n\n` +
+                          `${mockOtp}\n\n` +
+                          `This code will expire in 10 minutes.\n\n` +
+                          `📧 Email: ${email}\n\n` +
+                          `Please copy this code and enter it on the verification page.\n\n` +
+                          `Note: This is mock mode - Supabase not connected.`;
+      
+      alert(alertMessage);
+      
       return { 
         success: true, 
-        message: 'New verification code sent! (Mock mode - enter any 6 digits)' 
+        message: 'New verification code sent! Check the alert popup for your new code.' 
       };
     }
 

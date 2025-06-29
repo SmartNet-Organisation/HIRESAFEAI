@@ -96,7 +96,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
       if (result.success) {
         console.log('✅ Signup successful, navigating to verification');
         
-        // Navigate to OTP verification page
+        // IMPORTANT: Always navigate to OTP verification page after successful signup
         onNavigate('otp-verification', { 
           email: formData.email.toLowerCase().trim(), 
           userName: formData.name.trim()
