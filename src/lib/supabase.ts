@@ -1,15 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+// Placeholder file - Supabase integration removed
+// This file will be recreated when you reintegrate Supabase
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabase = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Database types
+// Placeholder types
 export interface User {
   id: string;
   email: string;
