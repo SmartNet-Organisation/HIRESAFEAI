@@ -38,48 +38,23 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate }) => {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
-    // Email validation - Updated to be more comprehensive and align with Supabase standards
+    // Email validation - Use simple but effective validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else {
-      // More comprehensive email validation regex that aligns with RFC 5322 standards
-      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      // Simple email validation that works with most email providers
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       
-      if (!emailRegex.test(formData.email)) {
+      if (!emailRegex.test(formData.email.trim())) {
         newErrors.email = 'Please enter a valid email address';
-      } else {
-        // Additional checks for common edge cases
-        const email = formData.email.toLowerCase().trim();
-        
-        // Check for consecutive dots
-        if (email.includes('..')) {
-          newErrors.email = 'Email cannot contain consecutive dots';
-        }
-        // Check for dots at the beginning or end of local part
-        else if (email.startsWith('.') || email.includes('.@')) {
-          newErrors.email = 'Email format is invalid';
-        }
-        // Check for valid domain structure
-        else if (!email.includes('.') || email.endsWith('.')) {
-          newErrors.email = 'Please enter a valid email domain';
-        }
-        // Check minimum domain length
-        else {
-          const parts = email.split('@');
-          if (parts.length !== 2 || parts[1].length < 3) {
-            newErrors.email = 'Please enter a valid email domain';
-          }
-        }
       }
     }
 
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     // Confirm password validation
